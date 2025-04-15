@@ -70,12 +70,13 @@ const uploadOrdersFromFile = async (req, res) => {
 
     // Prepare new orders
     const newOrders = sheet.map((row, i) => {
-      let tiffinQty = parseInt(row.Tiffin);
+      let tiffinQty = 0
       let specialItems = [];
-
-      if (isNaN(tiffinQty)) {
-        specialItems.push(String(row.Tiffin).trim());
-        tiffinQty = 0;
+      if(isNaN(row.tiffin)){
+        specialItems.push(row.tiffin)
+      }
+      else{
+        tiffinQty = parseInt(row.tiffin)
       }
 
       return {
@@ -91,7 +92,7 @@ const uploadOrdersFromFile = async (req, res) => {
         },
         items: { tiffin: tiffinQty },
         specialItems,
-        comments: [{ ops: 'import', comment: 'Imported via CSV', ts: new Date() }],
+        comments: [{ ops: 'import', comment: row['Location'], ts: new Date() }],
         status: 'created',
         date: new Date(start),
         day: start.toLocaleDateString('en-US', { weekday: 'long' }),
