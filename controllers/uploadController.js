@@ -70,14 +70,16 @@ const uploadOrdersFromFile = async (req, res) => {
 
     // Prepare new orders
     const newOrders = sheet.map((row, i) => {
-      let tiffinQty = 0
+      let tiffinQty = 0;
       let specialItems = [];
-      if(isNaN(row.tiffin)){
-        specialItems.push(row.tiffin)
+      const tiffinRaw = String(row['Tiffin'] ?? '').trim();
+
+      if (tiffinRaw && !/^\d+$/.test(tiffinRaw)) {
+        specialItems.push(tiffinRaw);
+      } else {
+        tiffinQty = parseInt(tiffinRaw) || 0;
       }
-      else{
-        tiffinQty = parseInt(row.tiffin)
-      }
+
 
       return {
         customerId: null,
