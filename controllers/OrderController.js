@@ -1,12 +1,16 @@
-const Order = require('../models/Order')
+const { DateTime } = require('luxon');
+const Order = require('../models/Order');
 
 exports.getOrdersByAccessCode = async (req, res) => {
   const { areaCode } = req.params;
-  const today = new Date();
-  const start = new Date(today.setHours(0, 0, 0, 0));
-  const end = new Date(today.setHours(23, 59, 59, 999));
-  console.log('start' + start)
-  console.log('end' + end)
+
+  // Get today's date in Toronto timezone
+  const nowToronto = DateTime.now().setZone('America/Toronto');
+  const start = nowToronto.startOf('day').toJSDate();
+  const end = nowToronto.endOf('day').toJSDate();
+
+  console.log('Toronto start:', start);
+  console.log('Toronto end:', end);
 
   try {
     const orders = await Order.find({
