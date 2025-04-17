@@ -10,6 +10,7 @@ dotenv.config();
 const uploadOrdersRoute = require('./routes/uploadOrders');
 const areaRoutes = require('./routes/areaRoutes');
 const authRoutes = require('./routes/authRoutes');
+const punchRoutes = require('./routes/punchRoutes')
 
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/area', areaRoutes)
 app.use('/auth', authRoutes);
 // Routes
 app.use('/api', uploadOrdersRoute);
+app.use('/punch', punchRoutes)
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
