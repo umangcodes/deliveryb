@@ -89,7 +89,7 @@ const uploadOrdersFromFile = async (req, res) => {
           houseType: null,
           buzzCode: null,
           unit: null,
-          deliveryType: null,
+          deliveryType: row['Location Notes'],
           areaCode
         },
         items: { tiffin: tiffinQty },
@@ -101,7 +101,6 @@ const uploadOrdersFromFile = async (req, res) => {
         stopNumber: row['Stop Number'] || i + 1,
         customerName: row['Location'] || 'N/A',
         rawAddress: row['Address'] || 'N/A',
-        notes: row['Notes'] || '',
       };
     });
 

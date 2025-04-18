@@ -33,6 +33,11 @@ const orderSchema = new mongoose.Schema({
     enum: ['created', 'updated', 'dispatched', 'delivered', 'underReview', 'cancelled', 'suspended', 'damaged', 'unableToDeliver'],
     default: 'created',
   },
+  delivery: {
+    at: { type: Date, default: null},
+    messageId: {type: String, default: null},
+    messageStatus: {type: String, default: null}
+  },
   date: { type: Date, default: Date.now },
   day: { type: String }
 }, {

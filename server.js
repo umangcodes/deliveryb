@@ -11,6 +11,7 @@ const uploadOrdersRoute = require('./routes/uploadOrders');
 const areaRoutes = require('./routes/areaRoutes');
 const authRoutes = require('./routes/authRoutes');
 const punchRoutes = require('./routes/punchRoutes')
+const orderRoutes = require('./routes/orderRoutes')
 
 
 const app = express();
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/area', areaRoutes)
 app.use('/auth', authRoutes);
+app.use('/orders', orderRoutes)
 // Routes
 app.use('/api', uploadOrdersRoute);
 app.use('/punch', punchRoutes)
