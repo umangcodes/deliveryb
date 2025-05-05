@@ -1,7 +1,7 @@
 const { DateTime } = require('luxon');
 const Order = require('../models/Order');
 const { sendSMS } = require('../utils/sendSMS');
-const { deliveredMessage } = require('../utils/templates/delivered')
+const { deliveredMessage, gg } = require('../utils/templates/delivered')
 
 exports.getOrdersByAccessCode = async (req, res) => {
   const { areaCode } = req.params;
@@ -42,8 +42,13 @@ exports.confirmDelivery = async (req, res) => {
 
     // Prepare message
     const messageBody = deliveredMessage;
-    // Attempt to send SMS
-    const smsResult = await sendSMS(order.customerPrimaryPhoneNumber, messageBody);
+    const ggmessage = gg
+    if(order.deliveryAddress.areaCode === 'GG'){
+      const smsResult = await sendSMS(order.customerPrimaryPhoneNumber, ggmessage);
+    }else{
+      // Attempt to send SMS
+      const smsResult = await sendSMS(order.customerPrimaryPhoneNumber, messageBody);
+    }
 
     // Update order with delivery status and message metadata
     order.status = 'delivered';
