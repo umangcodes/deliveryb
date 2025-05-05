@@ -43,11 +43,12 @@ exports.confirmDelivery = async (req, res) => {
     // Prepare message
     const messageBody = deliveredMessage;
     const ggmessage = gg
+    let smsResult
     if(order.deliveryAddress.areaCode === 'GG'){
-      const smsResult = await sendSMS(order.customerPrimaryPhoneNumber, ggmessage);
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, ggmessage);
     }else{
       // Attempt to send SMS
-      const smsResult = await sendSMS(order.customerPrimaryPhoneNumber, messageBody);
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, messageBody);
     }
 
     // Update order with delivery status and message metadata
