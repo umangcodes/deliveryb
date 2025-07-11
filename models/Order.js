@@ -36,7 +36,12 @@ const orderSchema = new mongoose.Schema({
   delivery: {
     at: { type: Date, default: null},
     messageId: {type: String, default: null},
-    messageStatus: {type: String, default: null}
+    messageStatus: {type: String, default: null},
+    proof: {
+      gcsUrl: { type: String, default: null },        // signed or public GCS URL
+      uploadedAt: { type: Date, default: null },       // when it was uploaded
+      uploadedBy: { type: String, default: null }      // could be driver ID or admin name
+    }
   },
   date: { type: Date, default: Date.now },
   day: { type: String }
