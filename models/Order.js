@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const orderSchema = new mongoose.Schema({
   customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' }, // Referencing Customer
   customerPrimaryPhoneNumber: { type: String, required: true }, // Storing the customer's primaryPhoneNo
+  stopNumber: { type: Number },
   deliveryAddress: {
     addressInfo: { type: String, default: "" }, 
     houseType: { type: String}, 
