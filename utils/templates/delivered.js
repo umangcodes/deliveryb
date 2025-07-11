@@ -1,6 +1,9 @@
 const deliveredMessage = `Ilaxi Food Services - Delivery
-Hello, 
-Your order has been delivered. 
+Hi there!
+
+🎉 Your Food Package has been delivered successfully!
+
+Bon Appétit! 
 `
 
 const gg = `Grain & Greens - Delivery
