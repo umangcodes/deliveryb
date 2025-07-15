@@ -1,6 +1,6 @@
 const { Storage } = require('@google-cloud/storage');
-const path = require('path');
 require('dotenv').config();
+const serviceAccount = require('./serviceAccountKey.json'); // make sure this file exists
 
 const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
 const bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET;
@@ -11,7 +11,7 @@ if (!projectId || !bucketName) {
 
 const storage = new Storage({
   projectId,
-  keyFilename: path.join(__dirname, './serviceAccountKey.json'), // keep in /config/
+  credentials: serviceAccount, // use object, not keyFilename
 });
 
 const bucket = storage.bucket(bucketName);
