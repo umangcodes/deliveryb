@@ -9,8 +9,7 @@ const { bucket } = require('../config/gcs');
 exports.uploadImageToGCS = async (file, destinationPath) => {
   return new Promise((resolve, reject) => {
     if (!file || !file.buffer) {
-      console.error('Missing file or file buffer');
-      return reject(new Error('Invalid file input'));
+      return reject(new Error('Invalid file input or buffer missing'));
     }
 
     const blob = bucket.file(destinationPath);
@@ -22,25 +21,33 @@ exports.uploadImageToGCS = async (file, destinationPath) => {
       },
     });
 
+    let streamDestroyed = false;
+
     stream.on('error', (err) => {
-      console.error('GCS upload error:', err);
-      // Avoid calling .end() again
-      if (!stream.destroyed) stream.destroy();
+      streamDestroyed = true;
+      console.error('GCS upload error:', err.message);
       reject(err);
     });
 
     stream.on('finish', () => {
-      console.log('Upload to GCS completed:', destinationPath);
-      resolve(destinationPath);
+      if (!streamDestroyed) {
+        resolve(destinationPath);
+      }
     });
 
-    try {
-      stream.end(file.buffer); // safest way to write the entire buffer
-    } catch (err) {
-      console.error('Error ending stream:', err);
-      if (!stream.destroyed) stream.destroy();
-      reject(err);
-    }
+    // Schedule the .end() safely after the stream is fully initialized
+    setImmediate(() => {
+      try {
+        if (!stream.destroyed) {
+          stream.end(file.buffer);
+        } else {
+          reject(new Error('Stream was destroyed before end() could be called'));
+        }
+      } catch (err) {
+        console.error('Error during stream.end:', err.message);
+        reject(err);
+      }
+    });
   });
 };
 
