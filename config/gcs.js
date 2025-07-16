@@ -16,7 +16,7 @@ const storage = new Storage({
     type: 'service_account',
     project_id: projectId,
     private_key: privateKey,
-    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    client_email: process.env.GCP_CLIENT_EMAIL,
   },
 });
 
