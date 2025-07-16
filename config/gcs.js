@@ -1,17 +1,23 @@
 const { Storage } = require('@google-cloud/storage');
 require('dotenv').config();
-const serviceAccount = require('./serviceAccountKey.json'); // make sure this file exists
 
 const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
 const bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET;
 
-if (!projectId || !bucketName) {
-  throw new Error('Missing required environment variables for GCS.');
+const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+if (!projectId || !bucketName || !privateKey || !process.env.GOOGLE_CLIENT_EMAIL) {
+  throw new Error('Missing required Google Cloud env variables.');
 }
 
 const storage = new Storage({
   projectId,
-  credentials: serviceAccount, // use object, not keyFilename
+  credentials: {
+    type: 'service_account',
+    project_id: projectId,
+    private_key: privateKey,
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+  },
 });
 
 const bucket = storage.bucket(bucketName);
