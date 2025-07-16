@@ -93,7 +93,7 @@ exports.confirmDeliveryWithProof = async (req, res) => {
     }
 
     // Step 1: Upload image and get GCS path
-    const destPath = `delivery_proofs/${orderId}_${Date.now()}.jpg`;
+    const destPath = `proofs/${orderId}_${Date.now()}.jpg`;
     const storedPath = await uploadImageToGCS(file, destPath);
     if (!storedPath) {
       return res.status(500).json({ error: 'Image upload failed' });
