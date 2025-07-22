@@ -168,17 +168,47 @@ exports.deliveryStatus = async (req, res) => {
     const todayStart = now.startOf('day').toJSDate();
     const todayEnd = now.endOf('day').toJSDate();
 
-    // Fetch today's order
-    const order = await Order.findOne({
+    // Fetch all orders for this phone number today
+    const orders = await Order.find({
       customerPrimaryPhoneNumber: phone,
       date: { $gte: todayStart, $lte: todayEnd },
     }).lean();
 
-    if (!order) return res.status(404).json({ order: null });
+    if (!orders.length) return res.status(404).json({ order: null });
 
-    const areaCode = order.deliveryAddress?.areaCode;
-    const currentStop = order.stopNumber;
+    const baseOrder = orders[0];
+    const deliveryAddress = baseOrder.deliveryAddress;
+    const areaCode = deliveryAddress?.areaCode;
+    const currentStop = Math.min(...orders.map(o => o.stopNumber || Infinity));
 
+    const combinedItems = {};
+    const allSpecialItems = [];
+    const allInstructions = [];
+    const allComments = [];
+    let deliveryAt = null;
+    let messageStatus = null;
+    let overallStatus = 'created';
+
+    const statusRank = { created: 1, dispatched: 2, delivered: 3 };
+
+    for (const order of orders) {
+      for (const [key, val] of Object.entries(order.items || {})) {
+        combinedItems[key] = (combinedItems[key] || 0) + val;
+      }
+
+      if (order.specialItems) allSpecialItems.push(...order.specialItems);
+      if (order.instructions) allInstructions.push(order.instructions);
+      if (order.comments) allComments.push(...order.comments);
+
+      if (!deliveryAt && order.delivery?.at) deliveryAt = order.delivery.at;
+      if (!messageStatus && order.delivery?.messageStatus) messageStatus = order.delivery.messageStatus;
+
+      if (statusRank[order.status] > statusRank[overallStatus]) {
+        overallStatus = order.status;
+      }
+    }
+
+    // Determine ETA (avgStopsLeft)
     const deliveredOrders = await Order.find({
       'deliveryAddress.areaCode': areaCode,
       status: 'delivered',
@@ -192,28 +222,24 @@ exports.deliveryStatus = async (req, res) => {
 
     let avgStopsLeft = null;
 
-    if (!currentStop) {
-      avgStopsLeft = null;
-    } else if (deliveredStops.length === 0) {
-      avgStopsLeft = currentStop - 0; // 🚩 No deliveries yet
-    } else {
-      const allBefore = deliveredStops.every(stop => stop < currentStop);
-
-      if (allBefore) {
-        const lastDeliveredStop = deliveredStops[deliveredStops.length - 1];
-        avgStopsLeft = currentStop - lastDeliveredStop;
+    if (currentStop !== Infinity) {
+      if (deliveredStops.length === 0) {
+        avgStopsLeft = currentStop;
       } else {
-        const lower = deliveredStops.filter(stop => stop < currentStop).pop();
-        const higher = deliveredStops.find(stop => stop > currentStop);
-
-        if (lower !== undefined && higher !== undefined) {
-          const diff1 = currentStop - lower;
-          const diff2 = higher - currentStop;
-          avgStopsLeft = Math.round((diff1 + diff2) / 2);
-        } else if (lower !== undefined) {
-          avgStopsLeft = currentStop - lower;
-        } else if (higher !== undefined) {
-          avgStopsLeft = higher - currentStop;
+        const allBefore = deliveredStops.every(stop => stop < currentStop);
+        if (allBefore) {
+          const lastDelivered = deliveredStops[deliveredStops.length - 1];
+          avgStopsLeft = currentStop - lastDelivered;
+        } else {
+          const lower = deliveredStops.filter(stop => stop < currentStop).pop();
+          const higher = deliveredStops.find(stop => stop > currentStop);
+          if (lower !== undefined && higher !== undefined) {
+            avgStopsLeft = Math.round((currentStop - lower + higher - currentStop) / 2);
+          } else if (lower !== undefined) {
+            avgStopsLeft = currentStop - lower;
+          } else if (higher !== undefined) {
+            avgStopsLeft = higher - currentStop;
+          }
         }
       }
     }
@@ -224,37 +250,38 @@ exports.deliveryStatus = async (req, res) => {
     });
 
     const dispatchTime = DateTime.now()
-    .setZone('America/Toronto')
-    .set({ hour: 13, minute: 30, second: 0, millisecond: 0 })
-    .toISO();
-  
+      .setZone('America/Toronto')
+      .set({ hour: 13, minute: 30, second: 0, millisecond: 0 })
+      .toISO();
 
+    // Optional signed delivery proof
     // let signedProofUrl = null;
-    // if (order.delivery?.proof?.gcsUrl) {
+    // if (baseOrder.delivery?.proof?.gcsUrl) {
     //   try {
-    //     signedProofUrl = await getSignedImageUrl(order.delivery.proof.gcsUrl);
+    //     signedProofUrl = await getSignedImageUrl(baseOrder.delivery.proof.gcsUrl);
     //   } catch (err) {
     //     console.error('Failed to sign delivery proof URL:', err);
     //   }
     // }
 
     const response = {
-      _id: order._id,
-      customerPrimaryPhoneNumber: order.customerPrimaryPhoneNumber,
-      deliveryAddress: order.deliveryAddress,
+      _id: baseOrder._id,
+      orderIds: orders.map(o => o._id), // optional traceability
+      customerPrimaryPhoneNumber: phone,
+      deliveryAddress,
       sequenceNumber,
       currentStop,
       avgStopsLeft,
       areaCode,
-      items: order.items,
-      specialItems: order.specialItems,
-      instructions: order.instructions,
-      comments: order.comments,
-      status: order.status,
+      items: combinedItems,
+      specialItems: allSpecialItems,
+      instructions: allInstructions.join(' | '),
+      comments: allComments,
+      status: overallStatus,
       dispatchTime,
       delivery: {
-        at: order.delivery?.at,
-        messageStatus: order.delivery?.messageStatus,
+        at: deliveryAt,
+        messageStatus,
       },
       // deliveryProof: signedProofUrl,
     };
