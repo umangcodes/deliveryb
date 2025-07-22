@@ -156,3 +156,112 @@ exports.getDeliveryProofUrl = async (req, res) => {
     res.status(500).json({ error: 'Could not generate signed URL.' });
   }
 };
+
+
+
+exports.deliveryStatus = async (req, res) => {
+  const phone = req.query.phone;
+  if (!phone) return res.status(400).json({ error: 'Phone number is required' });
+
+  try {
+    const now = DateTime.now().setZone('America/Toronto');
+    const todayStart = now.startOf('day').toJSDate();
+    const todayEnd = now.endOf('day').toJSDate();
+
+    // Fetch today's order
+    const order = await Order.findOne({
+      customerPrimaryPhoneNumber: phone,
+      date: { $gte: todayStart, $lte: todayEnd },
+    }).lean();
+
+    if (!order) return res.status(404).json({ order: null });
+
+    const areaCode = order.deliveryAddress?.areaCode;
+    const currentStop = order.stopNumber;
+
+    const deliveredOrders = await Order.find({
+      'deliveryAddress.areaCode': areaCode,
+      status: 'delivered',
+      date: { $gte: todayStart, $lte: todayEnd },
+    }).select('stopNumber').lean();
+
+    const deliveredStops = deliveredOrders
+      .map(o => o.stopNumber)
+      .filter(stop => typeof stop === 'number')
+      .sort((a, b) => a - b);
+
+    let avgStopsLeft = null;
+
+    if (!currentStop) {
+      avgStopsLeft = null;
+    } else if (deliveredStops.length === 0) {
+      avgStopsLeft = currentStop - 0; // 🚩 No deliveries yet
+    } else {
+      const allBefore = deliveredStops.every(stop => stop < currentStop);
+
+      if (allBefore) {
+        const lastDeliveredStop = deliveredStops[deliveredStops.length - 1];
+        avgStopsLeft = currentStop - lastDeliveredStop;
+      } else {
+        const lower = deliveredStops.filter(stop => stop < currentStop).pop();
+        const higher = deliveredStops.find(stop => stop > currentStop);
+
+        if (lower !== undefined && higher !== undefined) {
+          const diff1 = currentStop - lower;
+          const diff2 = higher - currentStop;
+          avgStopsLeft = Math.round((diff1 + diff2) / 2);
+        } else if (lower !== undefined) {
+          avgStopsLeft = currentStop - lower;
+        } else if (higher !== undefined) {
+          avgStopsLeft = higher - currentStop;
+        }
+      }
+    }
+
+    const sequenceNumber = await Order.countDocuments({
+      'deliveryAddress.areaCode': areaCode,
+      date: { $gte: todayStart, $lte: todayEnd },
+    });
+
+    const dispatchTime = DateTime.now()
+    .setZone('America/Toronto')
+    .set({ hour: 13, minute: 30, second: 0, millisecond: 0 })
+    .toISO();
+  
+
+    // let signedProofUrl = null;
+    // if (order.delivery?.proof?.gcsUrl) {
+    //   try {
+    //     signedProofUrl = await getSignedImageUrl(order.delivery.proof.gcsUrl);
+    //   } catch (err) {
+    //     console.error('Failed to sign delivery proof URL:', err);
+    //   }
+    // }
+
+    const response = {
+      _id: order._id,
+      customerPrimaryPhoneNumber: order.customerPrimaryPhoneNumber,
+      deliveryAddress: order.deliveryAddress,
+      sequenceNumber,
+      currentStop,
+      avgStopsLeft,
+      areaCode,
+      items: order.items,
+      specialItems: order.specialItems,
+      instructions: order.instructions,
+      comments: order.comments,
+      status: order.status,
+      dispatchTime,
+      delivery: {
+        at: order.delivery?.at,
+        messageStatus: order.delivery?.messageStatus,
+      },
+      // deliveryProof: signedProofUrl,
+    };
+
+    return res.status(200).json({ order: response });
+  } catch (err) {
+    console.error('[TRACK ORDER ERROR]', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
