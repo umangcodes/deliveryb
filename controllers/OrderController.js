@@ -282,6 +282,7 @@ exports.deliveryStatus = async (req, res) => {
       delivery: {
         at: deliveryAt,
         messageStatus,
+        proof: baseOrder.delivery?.proof || null,
       },
       // deliveryProof: signedProofUrl,
     };
