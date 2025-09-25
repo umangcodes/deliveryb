@@ -1,4 +1,4 @@
-const Driver = require('../models/driver');
+const Driver = require('../models/Driver');
 
 // Utility: Generate 4-digit numeric code
 const generate4DigitCode = () => {
