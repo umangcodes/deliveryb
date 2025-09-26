@@ -103,6 +103,7 @@ exports.getSummary = async (req, res) => {
     zone: normalizeZone(d?.deliveryAddress?.areaCode),
     name: d?.comments[0].comment || null,
     phone: d?.customerPrimaryPhoneNumber || null,
+    deliveryStatus: d?.delivery?.at || false,
     }));
     
     
