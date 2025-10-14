@@ -27,6 +27,24 @@ const parseFileInfo = (filename) => {
   };
 };
 
+const cleanPhoneNumber = (phone) => {
+  // Remove any special characters and spaces
+  if(phone){
+    let cleaned = phone.replace(/[^\d]/g, '');
+    
+    // Remove '+1' if present at the start
+    if (cleaned.startsWith('1')) {
+      cleaned = cleaned.slice(1);
+    }
+    
+    console.log("cleaned: " + cleaned)
+    return cleaned;
+  }else{
+    return null
+  }
+
+};
+
 const uploadOrdersFromFile = async (req, res) => {
   try {
     if (!req.file) {
@@ -83,7 +101,7 @@ const uploadOrdersFromFile = async (req, res) => {
 
       return {
         customerId: null,
-        customerPrimaryPhoneNumber: String(row.Phone).trim(),
+        customerPrimaryPhoneNumber: cleanPhoneNumber(String(row.Phone)),
         deliveryAddress: {
           addressInfo: row['Address'] || '',
           houseType: null,
