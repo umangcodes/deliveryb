@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
-
+// const cron = require('node-cron')
+// const runBaseJob = require('./utils/notificationJob')
 dotenv.config();
 
 const uploadOrdersRoute = require('./routes/uploadOrders');
@@ -14,7 +15,7 @@ const punchRoutes = require('./routes/punchRoutes')
 const orderRoutes = require('./routes/orderRoutes')
 const driverRoutes = require('./routes/driverRoutes')
 const commandCenterRoutes = require('./routes/commandCenterRoutes')
-
+const labelsRoutes = require('./routes/labelsRoutes')
 const app = express();
 const PORT = process.env.PORT || 5005;
 
@@ -33,6 +34,8 @@ app.use('/driver', driverRoutes)
 app.use('/api', uploadOrdersRoute);
 app.use('/punch', punchRoutes)
 app.use('/cc', commandCenterRoutes)
+app.use('/labels', labelsRoutes)
+
 
 
 // MongoDB connection
@@ -41,6 +44,10 @@ mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true
 }).then(() => {
   console.log('MongoDB connected');
+  // cron.schedule('*/5 * * * *', () => {
+  //   runBaseJob()
+  //   console.log('cron ran now' + new Date())
+  // })
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }).catch(err => {
   console.error('MongoDB connection error:', err);
