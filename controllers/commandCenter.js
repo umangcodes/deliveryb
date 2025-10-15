@@ -1,4 +1,5 @@
 const AreaConfig = require('../models/AreaConfig');
+const Message = require('../models/Message');
 const Order = require('../models/Order');
 const { DateTime } = require('luxon');
 
@@ -25,14 +26,14 @@ exports.getCommandCenterSnapshot = async (req, res) => {
 
     const zones = config.areas.map((area) => {
       const areaCode = area.areaCode.toUpperCase();
-      console.log(areaCode)
+      // console.log(areaCode)
       const areaOrders = orders.filter(o => (o.deliveryAddress.areaCode || '').toUpperCase() === areaCode);
 
       const deliveredOrders = areaOrders.filter(o => o.status === 'delivered');
       const activeOrders = areaOrders.filter(o =>
         !['delivered', 'cancelled', 'unableToDeliver', 'damaged'].includes(o.status)
       );
-      console.log(activeOrders.length)
+      // console.log(activeOrders.length)
 
       const dispatchedOrLater = areaOrders.filter(o =>
         ['dispatched', 'delivered', 'unableToDeliver', 'damaged'].includes(o.status)
@@ -107,5 +108,94 @@ exports.getSummary = async (req, res) => {
     }));
     
     
-    res.json({ ok: true, count: data.length, data });
+    const baseQueuedFilter = { 'queued.status': true, 'messageStatus.sent': false };
+
+    const [ totalQueued, externallyAccepted, internalOnly ] = await Promise.all([
+      Message.countDocuments(baseQueuedFilter),
+      Message.countDocuments({ ...baseQueuedFilter, 'queued.external.status': true }),
+      Message.countDocuments({ ...baseQueuedFilter, 'queued.external.status': false }),
+    ]);
+
+    return res.json({
+      ok: true,
+      count: data.length,
+      data,
+      queuedStats: {
+        totalQueued,
+        externallyAccepted,
+        internalOnly,
+      },
+    });
 }
+
+exports.notify = async (req, res) => {
+  try {
+    const { message, recipients } = req.body || {};
+
+    // Basic validation
+    if (typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({ ok: false, error: 'message is required' });
+    }
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ ok: false, error: 'recipients[] is required' });
+    }
+
+    const cleanedMessage = message.trim();
+    const now = new Date();
+
+    // Helpers
+    const digitsOnly = (s) => (s || '').toString().replace(/\D/g, '');
+
+    // Build docs (dedupe by normalized phone)
+    const seen = new Set();
+    const docs = [];
+    const invalid = [];
+
+    for (const r of recipients) {
+      const phone = digitsOnly(r?.phone);
+      if (!phone) {
+        invalid.push(r?.phone ?? null);
+        continue;
+      }
+      if (seen.has(phone)) continue;
+      seen.add(phone);
+
+      docs.push({
+        message: cleanedMessage,
+        customerPrimaryPhoneNumber: phone,
+        messageStatus: {
+          sent: false,
+          sentOn: null,
+        },
+        queued: {
+          status: true,
+          ts: now,
+          external: {
+            status: false,
+            ts: null,
+          }
+        },
+        generatedBy: 'CC', // as per schema default; explicit for clarity
+        // createdAt handled by schema default / timestamps
+      });
+    }
+
+    if (docs.length === 0) {
+      return res.status(400).json({ ok: false, error: 'no valid recipient phones found', invalid });
+    }
+
+    const created = await Message.insertMany(docs, { ordered: false });
+
+    return res.status(201).json({
+      ok: true,
+      queued: created.length,
+      totalRequested: recipients.length,
+      invalid,
+      ids: created.map((d) => d._id),
+      message: cleanedMessage,
+    });
+  } catch (e) {
+    console.error('notify error:', e);
+    return res.status(500).json({ ok: false, error: 'Internal Server Error' });
+  }
+};
