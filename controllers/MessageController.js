@@ -78,8 +78,8 @@ exports.getMessagesByDate = async (req, res) => {
     
     for (const msg of messages) {
       // Create a unique key for grouping: message content + created time (rounded to minute)
-      const createdMinute = new Date(msg.createdAt).setSeconds(0, 0);
-      const groupKey = `${msg.message}_${createdMinute}`;
+      const createdHour = new Date(msg.createdAt).setMinutes(0, 0, 0);
+      const groupKey = `${msg.message}_${createdHour}`;
       
       if (!messageGroups.has(groupKey)) {
         messageGroups.set(groupKey, {
