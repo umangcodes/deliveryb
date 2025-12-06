@@ -30,7 +30,7 @@ exports.getAllQueuedMessages = async (req, res) => {
   }
 };
 
-// Get messages by date with their status
+// Get messages by date with their status - grouped by message content with recipients
 exports.getMessagesByDate = async (req, res) => {
   try {
     const { date } = req.query;
@@ -62,7 +62,49 @@ exports.getMessagesByDate = async (req, res) => {
     .sort({ createdAt: -1 }) // Most recent first
     .select('-__v');
 
-    // Calculate statistics
+    // Helper function to determine recipient status
+    const getRecipientStatus = (msg) => {
+      if (msg.messageStatus.sent === true) {
+        return 'sent';
+      } else if (msg.queued.status === true) {
+        return 'pending';
+      } else {
+        return 'failed';
+      }
+    };
+
+    // Group messages by message content and timestamp (similar messages sent together)
+    const messageGroups = new Map();
+    
+    for (const msg of messages) {
+      // Create a unique key for grouping: message content + created time (rounded to minute)
+      const createdMinute = new Date(msg.createdAt).setSeconds(0, 0);
+      const groupKey = `${msg.message}_${createdMinute}`;
+      
+      if (!messageGroups.has(groupKey)) {
+        messageGroups.set(groupKey, {
+          message: msg.message,
+          createdAt: msg.createdAt,
+          queuedAt: msg.queued.ts,
+          sentAt: msg.messageStatus.sentOn,
+          source: msg.generatedBy,
+          externallyAccepted: msg.queued.external.status,
+          recipients: []
+        });
+      }
+      
+      // Add recipient to this message group
+      messageGroups.get(groupKey).recipients.push({
+        name: null, // Name not available in Message model
+        phone: msg.customerPrimaryPhoneNumber,
+        status: getRecipientStatus(msg)
+      });
+    }
+
+    // Convert map to array
+    const groupedMessages = Array.from(messageGroups.values());
+
+    // Calculate statistics based on individual message documents
     const stats = {
       total: messages.length,
       sent: messages.filter(m => m.messageStatus.sent === true).length,
@@ -78,12 +120,13 @@ exports.getMessagesByDate = async (req, res) => {
     return res.json({
       success: true,
       date: date,
-      count: messages.length,
+      count: groupedMessages.length, // Number of unique messages
       stats,
-      data: messages
+      data: groupedMessages
     });
   } catch (err) {
     console.error('Get Messages By Date Error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
