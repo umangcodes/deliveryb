@@ -12,6 +12,9 @@ router.post('/', areaController.addArea);
 // PATCH update access code
 router.patch('/access-code', areaController.updateAccessCode);
 
+// PUT update area details (including area code)
+router.put('/', areaController.updateArea);
+
 // DELETE area by areaCode
 router.delete('/:areaCode', areaController.deleteArea);
 

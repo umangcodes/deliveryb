@@ -49,6 +49,38 @@ exports.updateAccessCode = async (req, res) => {
   }
 };
 
+// Update area details (including area code)
+exports.updateArea = async (req, res) => {
+  const { oldAreaCode, areaCode, description, shortForm, accessCode } = req.body;
+  try {
+    const config = await AreaConfig.findOne();
+    if (!config) return res.status(404).json({ error: 'No area config found' });
+
+    const areaIndex = config.areas.findIndex(a => a.areaCode === oldAreaCode);
+    if (areaIndex === -1) return res.status(404).json({ error: 'Area not found' });
+
+    // Check if new area code already exists (only if area code is being changed)
+    if (areaCode && areaCode !== oldAreaCode) {
+      const duplicate = config.areas.find(a => a.areaCode === areaCode);
+      if (duplicate) return res.status(400).json({ error: 'New area code already exists' });
+    }
+
+    // Update area fields if provided
+    if (areaCode) config.areas[areaIndex].areaCode = areaCode;
+    if (description) config.areas[areaIndex].description = description;
+    if (shortForm) config.areas[areaIndex].shortForm = shortForm;
+    if (accessCode) {
+      config.areas[areaIndex].accessCode = accessCode;
+      config.areas[areaIndex].accessCodeUpdatedAt = new Date();
+    }
+
+    await config.save();
+    res.json({ message: 'Area updated successfully', area: config.areas[areaIndex] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Delete an area
 exports.deleteArea = async (req, res) => {
   const { areaCode } = req.params;
