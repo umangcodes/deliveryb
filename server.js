@@ -16,6 +16,7 @@ const orderRoutes = require('./routes/orderRoutes')
 const driverRoutes = require('./routes/driverRoutes')
 const commandCenterRoutes = require('./routes/commandCenterRoutes')
 const labelsRoutes = require('./routes/labelsRoutes')
+const messageRoutes = require('./routes/messageRoutes')
 const app = express();
 const PORT = process.env.PORT || 5005;
 
@@ -35,6 +36,7 @@ app.use('/api', uploadOrdersRoute);
 app.use('/punch', punchRoutes)
 app.use('/cc', commandCenterRoutes)
 app.use('/labels', labelsRoutes)
+app.use('/messages', messageRoutes)
 
 
 
