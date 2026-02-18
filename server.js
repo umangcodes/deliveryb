@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 5005;
 const allowedOrigins = [
   "https://deliveryagent.vercel.app",
   "https://ilaxiims-qrbx.vercel.app",
-  "http://localhost:3000",
+  "http://localhost:3000"
 ];
 app.use(cors({
   origin: function (origin, callback) {
