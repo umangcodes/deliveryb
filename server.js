@@ -36,6 +36,7 @@ app.use(cors({
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],// only matters if you use cookies; safe to leave true if you do
+  credentials: true,
 }));
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(204);
