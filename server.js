@@ -21,7 +21,23 @@ const app = express();
 const PORT = process.env.PORT || 5005;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  "https://deliveryagent.vercel.app",
+  "http://localhost:3000",
+];
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (curl, postman, mobile apps)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    return callback(new Error("CORS not allowed for origin: " + origin));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],// only matters if you use cookies; safe to leave true if you do
+}));
+app.options("*", cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
