@@ -42,7 +42,7 @@ exports.confirmDelivery = async (req, res) => {
       return res.status(404).json({ error: 'Order not found.' });
     }
     let smsResult;
-    if(order.client && order.client === 'internal'){
+    if(order.client && (order.client === 'Internal' || order.client === 'internal')){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, deliveredMessage);
     }else if(order.deliveryAddress.areaCode === 'GG'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, gg);
@@ -99,7 +99,7 @@ exports.confirmDeliveryWithProof = async (req, res) => {
     let smsResult;
 
     // Step 2: Send SMS
-    if(order.client && order.client === 'internal'){
+    if(order.client && (order.client === 'Internal' || order.client === 'internal')){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, deliveredMessage);
     }else if(order.deliveryAddress.areaCode === 'GG'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, gg);
