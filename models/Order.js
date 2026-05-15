@@ -45,7 +45,8 @@ const orderSchema = new mongoose.Schema({
     }
   },
   date: { type: Date, default: Date.now },
-  day: { type: String }
+  day: { type: String },
+  client: { type: String, default: 'internal'}
 }, {
   versionKey: false, // Disable the version key
 });

@@ -120,6 +120,7 @@ const uploadOrdersFromFile = async (req, res) => {
         stopNumber: row['Stop Number'] || i + 1,
         customerName: row['Location'] || 'N/A',
         rawAddress: row['Address'] || 'N/A',
+        client: row['Client'] || 'internal',
         // accessCode, // keep if needed
       };
     });

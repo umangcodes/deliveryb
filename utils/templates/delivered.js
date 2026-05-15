@@ -10,4 +10,6 @@ Thanks,
 G&G Team
 `
 
-module.exports = {deliveredMessage, gg}
+const clientDeliveryMessage = (client) => `${client} - Delivery
+Hello! Your Package from ${client} has been delivered! Please retrieve it at your earliest conveninence.`
+module.exports = {deliveredMessage, gg, clientDeliveryMessage}

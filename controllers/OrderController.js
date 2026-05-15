@@ -100,7 +100,8 @@ exports.confirmDeliveryWithProof = async (req, res) => {
     }
 
     // Step 2: Send SMS
-    const messageBody = order.deliveryAddress.areaCode === 'GG' ? gg : deliveredMessage;
+    var messageBody = order.deliveryAddress.areaCode === 'GG' ? gg : deliveredMessage;
+    var messageBody = order.client !== 'internal' ? clientDeliveryMessage(order.client) : messageBody; // Override if client-specific message exists
     const smsResult = await sendSMS(order.customerPrimaryPhoneNumber, messageBody);
 
     if (!smsResult || smsResult.success !== true) {
