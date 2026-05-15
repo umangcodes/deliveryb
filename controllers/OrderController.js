@@ -41,6 +41,13 @@ exports.confirmDelivery = async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found.' });
     }
+    if(order.client && order.client !== 'internal'){
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, deliveredMessage);
+    }else if(order.deliveryAddress.areaCode === 'GG'){
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, gg);
+    }else{
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, clientDeliveryMessage(order.client));
+    }
 
     // Prepare message
     const messageBody = deliveredMessage;
@@ -100,10 +107,13 @@ exports.confirmDeliveryWithProof = async (req, res) => {
     }
 
     // Step 2: Send SMS
-    
-    let messageBody = order.deliveryAddress.areaCode === 'GG' ? gg : deliveredMessage;
-    messageBody = order.client !== 'internal' ? clientDeliveryMessage(order.client) : messageBody; // Override if client-specific message exists
-    const smsResult = await sendSMS(order.customerPrimaryPhoneNumber, messageBody);
+    if(order.client && order.client !== 'internal'){
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, deliveredMessage);
+    }else if(order.deliveryAddress.areaCode === 'GG'){
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, gg);
+    }else{
+      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, clientDeliveryMessage(order.client));
+    } 
 
     if (!smsResult || smsResult.success !== true) {
       console.error('SMS sending failed:', smsResult);
