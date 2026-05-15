@@ -41,6 +41,7 @@ exports.confirmDelivery = async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found.' });
     }
+    let smsResult;
     if(order.client && order.client !== 'internal'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, deliveredMessage);
     }else if(order.deliveryAddress.areaCode === 'GG'){
@@ -51,8 +52,7 @@ exports.confirmDelivery = async (req, res) => {
 
     // Prepare message
     const messageBody = deliveredMessage;
-    const ggmessage = gg
-    let smsResult
+    const ggmessage = gg;
     if(order.deliveryAddress.areaCode === 'GG'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, ggmessage);
     }else{
@@ -105,6 +105,7 @@ exports.confirmDeliveryWithProof = async (req, res) => {
     if (!storedPath) {
       return res.status(500).json({ error: 'Image upload failed' });
     }
+    let smsResult;
 
     // Step 2: Send SMS
     if(order.client && order.client !== 'internal'){
