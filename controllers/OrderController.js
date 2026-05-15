@@ -42,7 +42,7 @@ exports.confirmDelivery = async (req, res) => {
       return res.status(404).json({ error: 'Order not found.' });
     }
     let smsResult;
-    if(order.client && order.client !== 'internal'){
+    if(order.client && order.client === 'internal'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, deliveredMessage);
     }else if(order.deliveryAddress.areaCode === 'GG'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, gg);
@@ -50,15 +50,6 @@ exports.confirmDelivery = async (req, res) => {
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, clientDeliveryMessage(order.client));
     }
 
-    // Prepare message
-    const messageBody = deliveredMessage;
-    const ggmessage = gg;
-    if(order.deliveryAddress.areaCode === 'GG'){
-      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, ggmessage);
-    }else{
-      // Attempt to send SMS
-      smsResult = await sendSMS(order.customerPrimaryPhoneNumber, messageBody);
-    }
 
     // Update order with delivery status and message metadata
     order.status = 'delivered';
@@ -108,7 +99,7 @@ exports.confirmDeliveryWithProof = async (req, res) => {
     let smsResult;
 
     // Step 2: Send SMS
-    if(order.client && order.client !== 'internal'){
+    if(order.client && order.client === 'internal'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, deliveredMessage);
     }else if(order.deliveryAddress.areaCode === 'GG'){
       smsResult = await sendSMS(order.customerPrimaryPhoneNumber, gg);
