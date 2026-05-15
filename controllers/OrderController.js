@@ -1,7 +1,7 @@
 const { DateTime } = require('luxon');
 const Order = require('../models/Order');
 const { sendSMS } = require('../utils/sendSMS');
-const { deliveredMessage, gg } = require('../utils/templates/delivered')
+const { deliveredMessage, gg, clientDeliveryMessage} = require('../utils/templates/delivered')
 const { uploadImageToGCS } = require('../utils/gcs')
 const { getSignedImageUrl } = require('../utils/gcs');
 
